@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vendas Porsche: painel</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F1F0ED;--panel:#FFFFFF;--ink:#1B1C1E;--mute:#66686B;--line:#DAD8D3;--red:#C8102E;--bar:#2A2C2F;--track:#ECEAE6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141516;--panel:#1D1F21;--ink:#EDECE8;--mute:#9A9C9F;--line:#32353A;--red:#E5374F;--bar:#BDBFC2;--track:#2A2D30}}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 18px 48px}
+h1,h2,.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.2px}
+h1{font-size:clamp(34px,6vw,56px);line-height:1;margin:0 0 6px;font-weight:700}
+.sub{color:var(--mute);margin:0 0 18px;max-width:60ch}
+.demo{background:var(--panel);border-left:4px solid var(--red);padding:10px 14px;margin:0 0 18px;font-size:14px}
+.demo button,.btn{font:inherit;cursor:pointer}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:22px}
+.bar label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:3px}
+select,.btn{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:8px 10px;min-width:140px;border-radius:2px}
+.btn:hover,select:hover{border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:22px}
+.kpi{background:var(--panel);padding:16px}
+.kpi small{color:var(--mute);font-size:13px}
+.kpi .num{display:block;font-size:40px;font-weight:700;line-height:1.1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);padding:18px}
+.card.wide{grid-column:1/-1}
+h2{font-size:24px;margin:0 0 2px;font-weight:700}
+.ins{color:var(--mute);font-size:14px;margin:0 0 14px;min-height:21px}
+.row{display:grid;grid-template-columns:130px 1fr 92px;gap:10px;align-items:center;padding:5px 0;cursor:pointer;font-size:14px}
+.row:hover .lb{text-decoration:underline}
+.lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr{background:var(--track);height:16px}
+.fl{height:100%;background:var(--bar)}
+.row.top .fl{background:var(--red)}
+.val{text-align:right;font-variant-numeric:tabular-nums}
+.cols{display:flex;align-items:end;gap:10px;height:190px;border-bottom:1px solid var(--line)}
+.col{flex:1;display:flex;flex-direction:column;justify-content:end;align-items:center;height:100%;cursor:pointer;font-size:12px;gap:4px}
+.col i{display:block;width:100%;background:var(--bar);min-height:2px}
+.col.top i{background:var(--red)}
+.yrs{display:flex;gap:10px;margin-top:6px}
+.yrs span{flex:1;text-align:center;font-size:13px;color:var(--mute)}
+.empty{padding:30px 0;color:var(--mute)}
+footer{margin-top:22px;color:var(--mute);font-size:13px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.row{grid-template-columns:100px 1fr 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Vendas Porsche</h1>
+  <p class="sub">Onde está a receita, como ela evolui por ano-modelo e como o cliente paga. Clique em uma barra para filtrar.</p>
+  <div class="bar" id="filters"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <section class="card wide"><h2>Quais modelos concentram a receita?</h2><p class="ins" id="i1"></p><div id="c1"></div></section>
+    <section class="card"><h2>A receita cresce de um ano para o outro?</h2><p class="ins" id="i2"></p><div id="c2"></div></section>
+    <section class="card"><h2>Como os clientes pagam?</h2><p class="ins" id="i3"></p><div id="c3"></div></section>
+  </div>
+  <footer id="foot"></footer>
+</div>
+<script>
+const CUR = "US$";
+let excluded = 7, rows = [];
+
+const DATA = [{"modelo":"718","versao":"718 Cayman","cidade":"Boston","estado":"MA","ano":2022,"preco":79500.0,"pagamento":"Credit Card"},{"modelo":"911","versao":"911 Turbo S","cidade":"Seattle","estado":"WA","ano":2024,"preco":235000.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne Coupe","cidade":"Austin","estado":"TX","ano":2023,"preco":112750.0,"pagamento":"Financing"},{"modelo":"Macan","versao":"Macan S","cidade":"Denver","estado":"CO","ano":2021,"preco":68900.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan 4S","cidade":"Los Angeles","estado":"CA","ano":2024,"preco":121000.0,"pagamento":"Bank Transfer"},{"modelo":"911","versao":"911 Carrera S","cidade":"New York","estado":"NY","ano":2020,"preco":96300.0,"pagamento":"Lease"},{"modelo":"Cayenne","versao":"Cayenne E-Hybrid","cidade":"San Diego","estado":"CA","ano":2022,"preco":89750.0,"pagamento":"Wire Transfer"},{"modelo":"718","versao":"718 Boxster","cidade":"Chicago","estado":"IL","ano":2021,"preco":73500.0,"pagamento":"Debit Card"},{"modelo":"Macan","versao":"Macan GTS","cidade":"Phoenix","estado":"AZ","ano":2024,"preco":95000.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan Turbo","cidade":"Dallas","estado":"TX","ano":2023,"preco":153200.5,"pagamento":"ACH Payment"},{"modelo":"911","versao":"911 GT3","cidade":"Las Vegas","estado":"NV","ano":2024,"preco":241000.0,"pagamento":"Wire Transfer"},{"modelo":"Panamera","versao":"Panamera Turbo S","cidade":"San Jose","estado":"CA","ano":2022,"preco":132000.0,"pagamento":"Cash"},{"modelo":"Cayenne","versao":"Cayenne Turbo GT","cidade":"Houston","estado":"TX","ano":2024,"preco":188000.0,"pagamento":"Crypto Payment"},{"modelo":"911","versao":"911 Carrera Cabriolet","cidade":"Atlanta","estado":"GA","ano":2023,"preco":127800.0,"pagamento":"Credit Card"},{"modelo":"Macan","versao":"Macan","cidade":"Orlando","estado":"FL","ano":2021,"preco":58900.0,"pagamento":"Bank Transfer"},{"modelo":"718","versao":"718 Spyder RS","cidade":"Portland","estado":"OR","ano":2024,"preco":164000.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan Cross Turismo","cidade":"Charlotte","estado":"NC","ano":2023,"preco":118500.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne S","cidade":"Nashville","estado":"TN","ano":2022,"preco":91300.0,"pagamento":"Credit Card"},{"modelo":"911","versao":"911 Targa 4S","cidade":"Minneapolis","estado":"MN","ano":2024,"preco":158750.0,"pagamento":"Lease"},{"modelo":"Macan","versao":"Macan Electric","cidade":"San Antonio","estado":"TX","ano":2025,"preco":86500.0,"pagamento":"Wire Transfer"},{"modelo":"911","versao":"911 Dakar","cidade":"Salt Lake City","estado":"UT","ano":2024,"preco":270000.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan GTS","cidade":"Raleigh","estado":"NC","ano":2023,"preco":139000.0,"pagamento":"Financing"},{"modelo":"Cayenne","versao":"Cayenne","cidade":"Detroit","estado":"MI","ano":2021,"preco":76800.0,"pagamento":"Credit Card"},{"modelo":"718","versao":"718 Cayman GT4 RS","cidade":"Columbus","estado":"OH","ano":2024,"preco":173600.0,"pagamento":"Wire Transfer"},{"modelo":"911","versao":"911 Carrera GTS","cidade":"Indianapolis","estado":"IN","ano":2022,"preco":119900.0,"pagamento":"Cash"},{"modelo":"Panamera","versao":"Panamera 4 E-Hybrid","cidade":"Fort Worth","estado":"TX","ano":2023,"preco":109250.0,"pagamento":"Lease"},{"modelo":"Macan","versao":"Macan T","cidade":"Jacksonville","estado":"FL","ano":2022,"preco":82000.0,"pagamento":"Wire Transfer"},{"modelo":"Taycan","versao":"Taycan Turbo S","cidade":"San Diego","estado":"CA","ano":2025,"preco":214000.0,"pagamento":"Crypto Payment"},{"modelo":"911","versao":"911 Carrera","cidade":"Tampa","estado":"FL","ano":2024,"preco":124500.0,"pagamento":"Credit Card"},{"modelo":"Cayenne","versao":"Cayenne S","cidade":"Sacramento","estado":"CA","ano":2023,"preco":98200.0,"pagamento":"Bank Transfer"},{"modelo":"Macan","versao":"Macan","cidade":"Cleveland","estado":"OH","ano":2022,"preco":67500.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan","cidade":"Milwaukee","estado":"WI","ano":2025,"preco":116900.0,"pagamento":"Wire Transfer"},{"modelo":"Panamera","versao":"Panamera 4S","cidade":"Kansas City","estado":"MO","ano":2024,"preco":112000.0,"pagamento":"Cash"},{"modelo":"911","versao":"911 Turbo","cidade":"Albuquerque","estado":"NM","ano":2024,"preco":198300.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne Coupe","cidade":"Tucson","estado":"AZ","ano":2023,"preco":103750.0,"pagamento":"Wire Transfer"},{"modelo":"Macan","versao":"Macan GTS","cidade":"Fresno","estado":"CA","ano":2024,"preco":93600.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan 4S","cidade":"Virginia Beach","estado":"VA","ano":2025,"preco":129000.0,"pagamento":"ACH Payment"},{"modelo":"Panamera","versao":"Panamera Turbo","cidade":"Colorado Springs","estado":"CO","ano":2022,"preco":136000.0,"pagamento":"Credit Card"},{"modelo":"911","versao":"911 GT3 RS","cidade":"Arlington","estado":"TX","ano":2024,"preco":286500.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne E-Hybrid","cidade":"Bakersfield","estado":"CA","ano":2023,"preco":92800.0,"pagamento":"Lease"},{"modelo":"Macan","versao":"Macan T","cidade":"Mesa","estado":"AZ","ano":2022,"preco":72400.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan Turbo","cidade":"Atlanta","estado":"GA","ano":2025,"preco":158500.0,"pagamento":"Crypto Payment"},{"modelo":"718","versao":"718 Cayman","cidade":"Long Beach","estado":"CA","ano":2021,"preco":69900.0,"pagamento":"Bank Transfer"},{"modelo":"911","versao":"911 Targa 4","cidade":"Oakland","estado":"CA","ano":2024,"preco":141250.0,"pagamento":"Financing"},{"modelo":"Panamera","versao":"Panamera","cidade":"Tulsa","estado":"OK","ano":2020,"preco":71500.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne Turbo","cidade":"Wichita","estado":"KS","ano":2023,"preco":146800.0,"pagamento":"Credit Card"},{"modelo":"Macan","versao":"Macan Electric","cidade":"New Orleans","estado":"LA","ano":2025,"preco":89700.0,"pagamento":"Lease"},{"modelo":"Taycan","versao":"Taycan GTS","cidade":"Anaheim","estado":"CA","ano":2024,"preco":142000.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne","cidade":"Henderson","estado":"NV","ano":2021,"preco":78400.0,"pagamento":"Cash"},{"modelo":"718","versao":"718 Spyder RS","cidade":"Lexington","estado":"KY","ano":2025,"preco":169000.0,"pagamento":"Financing"},{"modelo":"911","versao":"911 Dakar","cidade":"Riverside","estado":"CA","ano":2024,"preco":268900.0,"pagamento":"Credit Card"},{"modelo":"Panamera","versao":"Panamera 4","cidade":"Corpus Christi","estado":"TX","ano":2023,"preco":101300.0,"pagamento":"Wire Transfer"},{"modelo":"Macan","versao":"Macan S","cidade":"St. Louis","estado":"MO","ano":2021,"preco":66750.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan Cross Turismo","cidade":"Pittsburgh","estado":"PA","ano":2024,"preco":127900.0,"pagamento":"Lease"},{"modelo":"Cayenne","versao":"Cayenne Turbo GT","cidade":"Cincinnati","estado":"OH","ano":2025,"preco":200000.0,"pagamento":"Wire Transfer"},{"modelo":"911","versao":"911 Carrera Cabriolet","cidade":"Anchorage","estado":"AK","ano":2023,"preco":132000.0,"pagamento":"Crypto Payment"},{"modelo":"718","versao":"718 Cayman GT4 RS","cidade":"Plano","estado":"TX","ano":2024,"preco":176400.0,"pagamento":"Credit Card"},{"modelo":"Macan","versao":"Macan","cidade":"Greensboro","estado":"NC","ano":2021,"preco":59000.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan Turbo S","cidade":"Lincoln","estado":"NE","ano":2025,"preco":218000.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne S","cidade":"Jersey City","estado":"NJ","ano":2024,"preco":99950.0,"pagamento":"Debit Card"},{"modelo":"911","versao":"911 Carrera GTS","cidade":"Chandler","estado":"AZ","ano":2024,"preco":121750.0,"pagamento":"Credit Card"},{"modelo":"718","versao":"718 Boxster GTS","cidade":"Reno","estado":"NV","ano":2023,"preco":91500.0,"pagamento":"Lease"},{"modelo":"Panamera","versao":"Panamera Turbo S","cidade":"Buffalo","estado":"NY","ano":2022,"preco":134000.0,"pagamento":"Wire Transfer"},{"modelo":"Macan","versao":"Macan GTS","cidade":"Durham","estado":"NC","ano":2024,"preco":96800.0,"pagamento":"ACH Payment"},{"modelo":"Taycan","versao":"Taycan 4S","cidade":"Laredo","estado":"TX","ano":2025,"preco":131600.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne E-Hybrid","cidade":"Madison","estado":"WI","ano":2023,"preco":94300.0,"pagamento":"Cash"},{"modelo":"911","versao":"911 Turbo S","cidade":"Lubbock","estado":"TX","ano":2025,"preco":242000.0,"pagamento":"Crypto Payment"},{"modelo":"Macan","versao":"Macan Electric","cidade":"Irvine","estado":"CA","ano":2026,"preco":91300.0,"pagamento":"Wire Transfer"},{"modelo":"Panamera","versao":"Panamera","cidade":"Garland","estado":"TX","ano":2021,"preco":79900.0,"pagamento":"Financing"},{"modelo":"Cayenne","versao":"Cayenne Coupe","cidade":"Irving","estado":"TX","ano":2024,"preco":111000.0,"pagamento":"Bank Transfer"},{"modelo":"911","versao":"911 Targa 4S","cidade":"Chesapeake","estado":"VA","ano":2023,"preco":156500.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan","cidade":"Scottsdale","estado":"AZ","ano":2025,"preco":119900.0,"pagamento":"Lease"},{"modelo":"Macan","versao":"Macan T","cidade":"Norfolk","estado":"VA","ano":2022,"preco":73200.0,"pagamento":"Wire Transfer"},{"modelo":"911","versao":"911 GT3","cidade":"Boise","estado":"ID","ano":2024,"preco":224000.0,"pagamento":"Wire Transfer"},{"modelo":"911","versao":"911 Carrera","cidade":"Orlando","estado":"FL","ano":2024,"preco":126900.0,"pagamento":"Credit Card"},{"modelo":"Cayenne","versao":"Cayenne","cidade":"San Jose","estado":"CA","ano":2023,"preco":84500.0,"pagamento":"Bank Transfer"},{"modelo":"Macan","versao":"Macan S","cidade":"Tampa","estado":"FL","ano":2022,"preco":69800.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan 4S","cidade":"Denver","estado":"CO","ano":2025,"preco":132700.0,"pagamento":"Wire Transfer"},{"modelo":"Panamera","versao":"Panamera","cidade":"Austin","estado":"TX","ano":2021,"preco":81000.0,"pagamento":"Cash"},{"modelo":"911","versao":"911 Turbo S","cidade":"Boston","estado":"MA","ano":2026,"preco":249300.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne Coupe","cidade":"Phoenix","estado":"AZ","ano":2024,"preco":108750.0,"pagamento":"Wire Transfer"},{"modelo":"Macan","versao":"Macan Electric","cidade":"Chicago","estado":"IL","ano":2026,"preco":92600.0,"pagamento":"Financing"},{"modelo":"Taycan","versao":"Taycan Turbo","cidade":"Dallas","estado":"TX","ano":2025,"preco":164000.0,"pagamento":"ACH Payment"},{"modelo":"Panamera","versao":"Panamera 4S","cidade":"San Francisco","estado":"CA","ano":2024,"preco":119000.0,"pagamento":"Credit Card"},{"modelo":"911","versao":"911 GT3","cidade":"Las Vegas","estado":"NV","ano":2026,"preco":232500.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne E-Hybrid","cidade":"Charlotte","estado":"NC","ano":2023,"preco":96800.0,"pagamento":"Lease"},{"modelo":"Macan","versao":"Macan T","cidade":"Mesa","estado":"AZ","ano":2022,"preco":74400.0,"pagamento":"Cash"},{"modelo":"Taycan","versao":"Taycan GTS","cidade":"Atlanta","estado":"GA","ano":2025,"preco":148500.0,"pagamento":"Crypto Payment"},{"modelo":"718","versao":"718 Boxster","cidade":"Long Beach","estado":"CA","ano":2021,"preco":71900.0,"pagamento":"Bank Transfer"},{"modelo":"911","versao":"911 Targa 4","cidade":"Oakland","estado":"CA","ano":2024,"preco":143250.0,"pagamento":"Financing"},{"modelo":"Panamera","versao":"Panamera Turbo","cidade":"Tulsa","estado":"OK","ano":2020,"preco":137500.0,"pagamento":"Wire Transfer"},{"modelo":"Cayenne","versao":"Cayenne Turbo GT","cidade":"Wichita","estado":"KS","ano":2025,"preco":204800.0,"pagamento":"Credit Card"},{"modelo":"911","versao":"911 Dakar","cidade":"New Orleans","estado":"LA","ano":2024,"preco":271700.0,"pagamento":"Lease"}];
+
+/* ===== ESTADO E FILTROS ===== */
+const F = {modelo:"", estado:"", ano:"", pagamento:""};
+const LBL = {modelo:"Modelo", estado:"Estado", ano:"Ano-modelo", pagamento:"Pagamento"};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => CUR + " " + Math.round(n).toLocaleString("pt-BR");
+const short = n => CUR + " " + new Intl.NumberFormat("pt-BR",{notation:"compact",maximumFractionDigits:1}).format(n);
+
+function buildFilters(){
+  document.getElementById("filters").innerHTML = Object.keys(F).map(k => {
+    const vals = [...new Set(rows.map(r => r[k]))].sort((a,b) => k==="ano" ? a-b : String(a).localeCompare(String(b),"pt-BR"));
+    return `<label>${LBL[k]}<select data-f="${k}"><option value="">Todos</option>${vals.map(v=>`<option${String(F[k])===String(v)?" selected":""}>${esc(v)}</option>`).join("")}</select></label>`;
+  }).join("") + `<button class="btn" id="reset">Limpar filtros</button>`;
+}
+function group(list, key){ const m = new Map();
+  list.forEach(r => { const g = m.get(r[key]) || {k:r[key], sum:0, n:0}; g.sum += r.preco; g.n++; m.set(r[key], g); });
+  return [...m.values()]; }
+function hbars(id, key, g, total){
+  const max = Math.max(...g.map(x => x.sum));
+  document.getElementById(id).innerHTML = g.map((x,i) => `<div class="row${i===0?" top":""}" data-k="${key}" data-v="${esc(x.k)}" title="${x.n} vendas"><span class="lb">${esc(x.k)}</span><div class="tr"><div class="fl" style="width:${x.sum/max*100}%"></div></div><span class="val">${short(x.sum)} <small>(${Math.round(x.sum/total*100)}%)</small></span></div>`).join("");
+}
+
+function render(){
+  const f = rows.filter(r => Object.keys(F).every(k => F[k]==="" || String(r[k])===String(F[k])));
+  const kp = document.getElementById("kpis"), ids = ["c1","c2","c3"], ins = ["i1","i2","i3"];
+  if (!f.length){ kp.innerHTML = ""; ids.forEach(i => document.getElementById(i).innerHTML = `<div class="empty">Nenhuma venda com esses filtros. Use “Limpar filtros”.</div>`); ins.forEach(i => document.getElementById(i).textContent = ""); return; }
+  const total = f.reduce((a,r) => a + r.preco, 0), byM = group(f,"modelo").sort((a,b) => b.sum-a.sum);
+  kp.innerHTML = [["Vendas",f.length.toLocaleString("pt-BR")],["Receita",short(total)],["Ticket médio",short(total/f.length)],["Modelo líder",esc(byM[0].k)]]
+    .map(([a,b]) => `<div class="kpi"><small>${a}</small><span class="num">${b}</span></div>`).join("");
+  // 1) modelos
+  hbars("c1","modelo",byM,total);
+  const t3 = byM.slice(0,3).reduce((a,x) => a + x.sum, 0);
+  document.getElementById("i1").textContent = `${byM[0].k} lidera com ${Math.round(byM[0].sum/total*100)}% da receita; os 3 primeiros somam ${Math.round(t3/total*100)}%.`;
+  // 2) anos
+  const byY = group(f,"ano").sort((a,b) => a.k-b.k), mx = Math.max(...byY.map(x => x.sum)), best = byY.find(x => x.sum===mx);
+  document.getElementById("c2").innerHTML = `<div class="cols">${byY.map(x => `<div class="col${x===best?" top":""}" data-k="ano" data-v="${x.k}" title="${x.n} vendas"><span>${short(x.sum)}</span><i style="height:${x.sum/mx*78}%"></i></div>`).join("")}</div><div class="yrs">${byY.map(x => `<span>${x.k}</span>`).join("")}</div>`;
+  const a = byY[0], z = byY[byY.length-1];
+  document.getElementById("i2").textContent = byY.length > 1 ? `Melhor ano: ${best.k}. De ${a.k} a ${z.k}, a receita foi de ${short(a.sum)} para ${short(z.sum)}.` : `Só há dados de ${a.k} neste recorte.`;
+  // 3) pagamento
+  const byP = group(f,"pagamento").sort((a,b) => b.sum-a.sum);
+  hbars("c3","pagamento",byP,total);
+  document.getElementById("i3").textContent = `${byP[0].k} responde por ${Math.round(byP[0].sum/total*100)}% da receita e ${Math.round(byP[0].n/f.length*100)}% das vendas.`;
+  document.getElementById("foot").textContent = `${f.length} de ${rows.length} vendas no recorte.` + (excluded ? ` ${excluded} vendas canceladas ficaram fora da conta.` : "");
+}
+
+/* ===== EVENTOS ===== */
+document.addEventListener("change", e => { const k = e.target.dataset && e.target.dataset.f; if (k){ F[k] = e.target.value; render(); } });
+document.addEventListener("click", e => {
+  if (e.target.id === "reset"){ Object.keys(F).forEach(k => F[k]=""); buildFilters(); render(); return; }
+  const el = e.target.closest("[data-k]"); if (!el) return;
+  const k = el.dataset.k; F[k] = String(F[k]) === el.dataset.v ? "" : el.dataset.v; buildFilters(); render();
+});
+
+rows = DATA; buildFilters(); render();
+</script>
+</body>
+</html>
